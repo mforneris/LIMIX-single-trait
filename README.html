@@ -389,15 +389,35 @@ summary {
 <div id="linear-mixed-model-for-single-trait-eqtl-discovery" class="section level1">
 <h1>Linear Mixed Model for single trait eQTL discovery</h1>
 <p><br /></p>
-<p>This is a single trait implementation of the linear mixed model <a href="https://www.biorxiv.org/content/10.1101/003905v2">LIMIX</a>. LIMIX is a python</p>
+<p>This is a single trait and easy to run implementation of the linear mixed model <a href="https://www.biorxiv.org/content/10.1101/003905v2">LIMIX</a> framework for QTL mapping. LIMIX is an efficient python implementation of <a href="https://en.wikipedia.org/wiki/Mixed_model">Linear Mixed Models</a> used to properly control for <a href="https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1007309">population structure</a> in association studies.</p>
+<p>This single trait implementation can perform univariate association tests between a single phenotype and multiple variants. A major feature is the ability to compute empirical p-values based on phenotype permutations. Empirical p-values are the most reliable way to assess association because they make no assumption on the genotype and phenotype distributions.</p>
+<p>To improve parallelization, this script performs test on a single gene (that has to be provided in the options).</p>
 <p><br /><br /></p>
+<div id="prerequisites" class="section level2">
+<h2>Prerequisites</h2>
+<p><br /></p>
+<p>Install <a href="https://www.anaconda.com/products/individual">Anaconda 2</a> following the instruction on the Anaconda website. LIMIX is based on python2.</p>
+<p><br /><br /></p>
+</div>
 <div id="installation" class="section level2">
 <h2>Installation</h2>
-<ul>
-<li>Clone this GitHub repository</li>
-</ul>
-<pre><code>    export BASSETDIR=the/dir/where/basset/is/installed
+<p><br /></p>
+<p>Clone this GitHub repository</p>
+<pre><code>    git clone https://github.com/mforneris/LIMIX-single-trait.git
 </code></pre>
+<p>Enter in the LIMIX implementation folder</p>
+<pre><code>   cd LIMIX-single-trait
+</code></pre>
+<p>Create an Anaconda environment that includes all the packages necessary to run LIMIX</p>
+<pre><code>    conda env create -f config/environment.yml -n LIMIX_env
+</code></pre>
+<p>Activate the conda environment</p>
+<pre><code>    source activate LIMIX_env
+</code></pre>
+<p>Finally install vcftools</p>
+<pre><code>    source install vcftools
+</code></pre>
+<p>And you are good to go!</p>
 <p><br /><br /></p>
 </div>
 <div id="expected-inputs" class="section level2">
@@ -405,23 +425,77 @@ summary {
 <p><br /></p>
 <div id="genotypes" class="section level4">
 <h4>1. Genotypes</h4>
+<p>The genotype file contains the variants information that will be used as independent variable in the test. Most variant files are in <a href="https://samtools.github.io/hts-specs/VCFv4.2.pdf">vcf format</a>. This LIMIX uses <a href="https://en.wikipedia.org/wiki/Hierarchical_Data_Format">hdf5 format</a> files as inputs to make processing faster and data storage more compact. It is adviced to filter variants with maf &lt; 5% and missing values &gt; 20%.</p>
+<p>For a guide on how to convert vcf files to hdf5 look at the command line section.</p>
 <p><br /></p>
 </div>
 <div id="phenotypes" class="section level4">
 <h4>2. Phenotypes</h4>
+<p>The phenotype file contains the quantitative trait information that will be used as dependent variable in the test. The phenotype matrix should have individuals as rows and phenotypes as columns. The single triat LIMIX can perform tests for each phenotype singularly. Gene expression values can be corrected for confounding factors using <a href="https://www.nature.com/articles/nprot.2011.457">PEER</a>.</p>
+<p>The command line section contains a guide on how to convert csv files to hdf5.</p>
 <p><br /></p>
 </div>
 <div id="neutrally-evolving-variants-to-infer-population-structure" class="section level4">
 <h4>3. Neutrally evolving variants to infer population structure</h4>
+<p>Neutrally evolving variants are used to infer population structure. It is important to distinguish between variants under selective pressure and variants that can be used as a proxy of time. Neutrally evolving variants can be found as coding synonnymous variants or variants in short introns (&gt;60bp).</p>
+<p>The vcf including neutrally evolving variants shloud be converted in hdf5 format.</p>
 <p><br /></p>
 </div>
 <div id="range-of-variants-indexes-for-each-gene" class="section level4">
 <h4>4. Range of variants indexes for each gene</h4>
+<p>Thsi file should contain three TAB-separated columns. The first column is the gene name, the second and the third should contain the indexes of the first and last variant to be tested for association with the gene. The variant indexes start from 0 (with the first variant in the vcf). The interval should be left-closed, right-open [a,b).</p>
+<p>E.g. if I want to test variants from the 500 to the 673 for association with gene ENSG0000, the corresponding entry in the file will be:</p>
+<p>ENSG0000         499         673</p>
 <p><br /><br /></p>
 </div>
 </div>
-<div id="command-line-example" class="section level2">
-<h2>Command line example</h2>
+<div id="output" class="section level2">
+<h2>Output</h2>
+<p>The oput file will contain 6 columns: 1. The chromosome of the variants 2. The position (1-based) of the variant 3. The gene name 4. The p-value of the linear mixed model test 5. The beta of the linear mixed model test 6. The empirical p-value</p>
+<p><br /></p>
+</div>
+<div id="command-line-examples" class="section level2">
+<h2>Command line examples</h2>
+<p><br /></p>
+<div id="convert-vcf-files-to-hdf" class="section level4">
+<h4>Convert vcf files to hdf</h4>
+<p>First you need to convert the vcf file in 012 format using vcftools</p>
+<pre><code> vcftools \
+    --gzvcf example/input_data/test_variants.vcf.gz \
+    --012 --out example/input_data/test_variants
+</code></pre>
+<p>Then you can use limix_converter to convert the 012 file to hdf</p>
+<pre><code> python2.7 bin/limix_converter.py \
+    --g012=example/input_data/test_variants.012 \
+    --outfile=example/input_data/test_variants.hdf
+</code></pre>
+<p>The same procedure can be applied to convert the population structure vcf file.</p>
+<p><br /></p>
+</div>
+<div id="convert-csv-phenotype-file-files-to-hdf" class="section level4">
+<h4>Convert csv phenotype file files to hdf</h4>
+<p>To convert the gene expression file into hdf format use:</p>
+<pre><code> python2.7 bin/limix_converter.py \
+    --csv=example/input_data/gene_expression.csv  \
+    --outfile=example/input_data/gene_expression.hdf
+</code></pre>
+<p>Make sure that the expression file is properly formatted.</p>
+<p><br /></p>
+</div>
+<div id="run-limix-test" class="section level4">
+<h4>Run LIMIX test</h4>
+<p>Here is an example on how to run limix single trait test on a gene. The gene name is specified with the option -x. The number of permutations to compute the empirical p-value is specified with the option -n. The number of permutations will influence the quality of the empirical p-value estimate.</p>
+<pre><code> python2.7 bin/limix_single_trait_gene_based.py \
+        -g example/input_data/test_variants.hdf \
+        -p example/input_data/gene_expression.hfd5 \
+        -r example/input_data/population_structure_variants.hdf \
+        -c example/input_data/variants_indexes_to_genes.txt \
+        -x FBgn0000024 \
+        -n 10000 \
+        &gt; example/output_data/limix_single_trait_eQTLs_FBgn0000024.txt
+</code></pre>
+<p>You can find a command line example in the bin folder.</p>
+</div>
 </div>
 </div>
 

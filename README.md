@@ -172,5 +172,3 @@ Here is an example on how to run limix single trait test on a gene. The gene nam
 You can find a command line example in the bin folder.
 
 
-
-

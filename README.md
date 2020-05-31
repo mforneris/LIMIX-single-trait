@@ -169,6 +169,5 @@ Here is an example on how to run limix single trait test on a gene. The gene nam
         > example/output_data/limix_single_trait_eQTLs_FBgn0000024.txt
 </code></pre>
 
-You can find a command line example in the bin folder.
 
 
